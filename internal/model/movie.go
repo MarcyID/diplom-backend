@@ -1,79 +1,25 @@
 package model
 
-type Movie struct {
-	ID               int64          `json:"id"`
-	Name             string         `json:"name"`
-	AlternativeName  string         `json:"alternativeName"`
-	EnName           string         `json:"enName"`
-	Type             string         `json:"type"` // movie, tv-series
-	Year             int            `json:"year"`
-	Description      string         `json:"description"`
-	ShortDescription string         `json:"shortDescription"`
-	Rating           Rating         `json:"rating"`
-	Votes            Votes          `json:"votes"`
-	MovieLength      int            `json:"movieLength"`
-	AgeRating        int            `json:"ageRating"`
-	Poster           Image          `json:"poster"`
-	Backdrop         Image          `json:"backdrop"`
-	Genres           []Genre        `json:"genres"`
-	Countries        []Country      `json:"countries"`
-	Persons          []Person       `json:"persons"`
-	Watchability     Watchability   `json:"watchability"`
-	SimilarMovies    []MoviePreview `json:"similarMovies"`
-}
+import "diplomM/internal/model/kinopoisk"
 
-type Rating struct {
-	KP   float64 `json:"kp"`
-	IMDB float64 `json:"imdb"`
-	TMDB float64 `json:"tmdb"`
-}
-
-type Votes struct {
-	KP   int `json:"kp"`
-	IMDB int `json:"imdb"`
-}
-
-type Image struct {
-	URL        string `json:"url"`
-	PreviewURL string `json:"previewUrl"`
-}
-
-type Genre struct {
-	Name string `json:"name"`
-}
-
-type Country struct {
-	Name string `json:"name"`
-}
-
-type Person struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	Profession string `json:"profession"`
-	Photo      string `json:"photo"`
-}
-
-type Watchability struct {
-	Items []WatchItem `json:"items"`
-}
-
-type WatchItem struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
+// MovieSearchResponse - ответ поиска фильмов
 type MovieSearchResponse struct {
-	Docs  []Movie `json:"docs"`
-	Total int     `json:"total"`
-	Limit int     `json:"limit"`
-	Page  int     `json:"page"`
-	Pages int     `json:"pages"`
+	Docs  []kinopoisk.KinopoiskFilmSearchItem `json:"docs"`
+	Total int                                 `json:"total"`
+	Limit int                                 `json:"limit"`
+	Page  int                                 `json:"page"`
+	Pages int                                 `json:"pages"`
 }
 
+// MoviePreview - превью фильма (для похожих)
 type MoviePreview struct {
-	ID     int64  `json:"id"`
-	Name   string `json:"name"`
-	Year   int    `json:"year"`
-	Rating Rating `json:"rating"`
-	Poster Image  `json:"poster"`
+	FilmID           int64    `json:"filmId"`
+	NameRU           *string  `json:"nameRu"`
+	NameEN           *string  `json:"nameEn"`
+	PosterURL        string   `json:"posterUrl"`
+	PosterURLPreview string   `json:"posterUrlPreview"`
+	RatingKinopoisk  *float64 `json:"ratingKinopoisk"`
+	RatingIMDB       *float64 `json:"ratingImdb"`
+	Year             *int     `json:"year"`
+	Type             string   `json:"type"`
 }

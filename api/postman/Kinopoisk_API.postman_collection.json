@@ -1,0 +1,917 @@
+{
+	"info": {
+		"_postman_id": "diplom-backend-kinopoisk",
+		"name": "Diplom Backend - Kinopoisk API",
+		"description": "Коллекция запросов для тестирования backend API дипломного проекта.\n\n**Технологии:**\n- Backend: Go 1.21 + Gin Framework\n- Database: PostgreSQL 15\n- Cache: Redis/In-Memory (TTL 24 часа)\n- Auth: JWT (Access 15 мин, Refresh 7 дней)\n\n**Развёртывание:**\n- Frontend: GitHub Pages\n- Backend: Render/Railway\n\n**Переменные окружения:**\n- `base_url` - базовый URL сервера (http://localhost:5454)\n- `access_token` - JWT access token (автоматически после login)\n- `refresh_token` - JWT refresh token (автоматически после login)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5454",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string",
+			"description": "JWT access token (устанавливается автоматически после login)"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string",
+			"description": "JWT refresh token (устанавливается автоматически после login)"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"john_doe\",\n  \"password\": \"securepassword123\",\n  \"full_name\": \"John Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"description": "Регистрация нового пользователя.\n\n**Требования к паролю:**\n- Минимум 6 символов\n- Максимум 72 символа\n\n**Требования к username:**\n- Минимум 3 символа\n- Максимум 50 символов"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Вход в систему.\n\n**Возвращает:**\n- user - информация о пользователе\n- access_token - JWT токен (15 минут)\n- refresh_token - токен обновления (7 дней)\n\n**Сохраните токены для последующих запросов!**"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Me (with token)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "me"]
+						},
+						"description": "Получение информации о текущем пользователе.\n\nТребует valid JWT токен в заголовке Authorization."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						},
+						"description": "Выход из системы.\n\nУдаляет сессию и инвалидирует refresh токен."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						},
+						"description": "Обновление пары токенов.\n\nИспользуйте refresh_token для получения новой пары access/refresh токенов."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Films",
+			"item": [
+				{
+					"name": "Search Films",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/search?q=матрица&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "матрица",
+									"description": "Поисковый запрос (название фильма)"
+								},
+								{
+									"key": "genre",
+									"value": "",
+									"description": "ID жанра (можно несколько)",
+									"disabled": true
+								},
+								{
+									"key": "country",
+									"value": "",
+									"description": "ID страны (можно несколько)",
+									"disabled": true
+								},
+								{
+									"key": "year_from",
+									"value": "",
+									"description": "Год от",
+									"disabled": true
+								},
+								{
+									"key": "year_to",
+									"value": "",
+									"description": "Год до",
+									"disabled": true
+								},
+								{
+									"key": "rating_min",
+									"value": "",
+									"description": "Минимальный рейтинг",
+									"disabled": true
+								},
+								{
+									"key": "rating_max",
+									"value": "",
+									"description": "Максимальный рейтинг",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								}
+							]
+						},
+						"description": "Поиск фильмов по названию и фильтрам.\n\n**Параметры:**\n- `q` - поисковый запрос\n- `genre` - ID жанра (можно указать несколько)\n- `country` - ID страны (можно указать несколько)\n- `year_from` - год от\n- `year_to` - год до\n- `rating_min` - минимальный рейтинг\n- `rating_max` - максимальный рейтинг\n- `page` - номер страницы (макс. 20)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Film by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/301",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "301"]
+						},
+						"description": "Получение подробной информации о фильме по ID.\n\n**Примеры ID:**\n- 301 - Матрица (1999)\n- 111 - Терминатор 2 (1991)\n- 439 - Гарри Поттер и философский камень (2001)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Random Film",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/random?genre=18&min_rating=7.0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "random"],
+							"query": [
+								{
+									"key": "genre",
+									"value": "18",
+									"description": "ID жанра (можно несколько): 13=Комедия, 18=Мультфильм, 6=Фантастика"
+								},
+								{
+									"key": "min_rating",
+									"value": "7.0",
+									"description": "Минимальный рейтинг"
+								}
+							]
+						},
+						"description": "Получение случайного фильма.\n\n**Параметры:**\n- `genre` - ID жанра (можно несколько): 13=Комедия, 11=Боевик, 2=Драма, 6=Фантастика, 18=Мультфильм\n- `min_rating` - минимальный рейтинг (например, 7.5)\n\n**Примеры:**\n- `/api/v1/movies/random?min_rating=7.5` - любой фильм с рейтингом от 7.5\n- `/api/v1/movies/random?genre=13&min_rating=7.0` - случайная комедия\n- `/api/v1/movies/random?genre=18` - случайный мультфильм\n- `/api/v1/movies/random?genre=6&genre=1&min_rating=8.0` - фантастика или триллер с высоким рейтингом"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Similar Films by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/301/similar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "301", "similar"]
+						},
+						"description": "Получение списка похожих фильмов по ID фильма.\n\n**Параметры:**\n- `id` - ID фильма в пути"
+					},
+					"response": []
+				},
+				{
+					"name": "Find Similar by Title",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/similar/by-title?title=Матрица",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "similar", "by-title"],
+							"query": [
+								{
+									"key": "title",
+									"value": "Матрица",
+									"description": "Название фильма для поиска похожих"
+								}
+							]
+						},
+						"description": "Поиск похожих фильмов по названию.\n\nСначала находит фильм по названию, затем возвращает похожие на него.\n\n**Параметры:**\n- `title` - название фильма"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Genres and Countries",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/genres",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "genres"]
+						},
+						"description": "Получение списка всех доступных жанров и стран для использования в фильтрах поиска.\n\nВозвращает ID и названия, которые можно использовать в параметрах `genre` и `country` при поиске."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Popular Films",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/films/popular?page=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "films", "popular"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								}
+							]
+						},
+						"description": "Получение списка популярных фильмов из топа Kinopoisk.\n\nИспользует коллекцию TOP_POPULAR_MOVIES.\n\n**Параметры:**\n- `page` - номер страницы (макс. 50)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Upcoming Films",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/films/upcoming?page=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "films", "upcoming"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								}
+							]
+						},
+						"description": "Получение списка предстоящих премьер (CLOSES_RELEASES).\n\n**Параметры:**\n- `page` - номер страницы (макс. 50)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Premieres",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/films/premieres?year=2025&month=JANUARY",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "films", "premieres"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2025",
+									"description": "Год (например, 2025)"
+								},
+								{
+									"key": "month",
+									"value": "JANUARY",
+									"description": "Месяц на английском (JANUARY, FEBRUARY, ..., DECEMBER)"
+								}
+							]
+						},
+						"description": "Получение премьер за указанный год и месяц из Kinopoisk API.\n\n**Параметры:**\n- `year` - год (обязательно)\n- `month` - месяц на английском (обязательно): JANUARY, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER\n\n**Возвращает:**\n- total - общее количество премьер\n- items - массив премьер\n  - kinopoiskId - ID фильма\n  - nameRu, nameEn - названия\n  - year - год\n  - posterUrl, posterUrlPreview - постеры\n  - countries - страны\n  - genres - жанры\n  - duration - длительность\n  - premiereRu - дата российской премьеры"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cast & Crew",
+			"item": [
+				{
+					"name": "Get Staff by Film ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/301/staff",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "301", "staff"]
+						},
+						"description": "Получение списка всех актёров и режиссёров фильма.\n\n**Параметры:**\n- `id` - ID фильма в пути\n\n**Возвращает:**\n- staffId - ID персоны\n- nameRu, nameEn - имена\n- description - описание роли\n- posterUrl - фото\n- professionText - профессия (текст)\n- professionKey - профессия (ключ)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Person by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/persons/66539",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "persons", "66539"]
+						},
+						"description": "Получение подробной информации о персоне (актёр, режиссёр).\n\n**Примеры ID:**\n- 66539 - Винс Гиллиган (режиссёр Breaking Bad)\n- 119448 - Киану Ривз\n\n**Возвращает:**\n- personId - ID персоны\n- nameRu, nameEn - имена\n- sex - пол\n- posterUrl - фото\n- growth - рост\n- birthday, death - даты рождения и смерти\n- birthplace, deathplace - места\n- profession - профессии\n- facts - факты\n- films - фильмы с участием\n- spouses - супруги"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Actors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/actors/search?q=Киану&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "actors", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "Киану",
+									"description": "Поисковый запрос (имя актёра)"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								}
+							]
+						},
+						"description": "Поиск актёров и режиссёров по имени.\n\n**Параметры:**\n- `q` - поисковый запрос (имя)\n- `page` - номер страницы (макс. 2)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Actor by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/actors/119448",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "actors", "119448"]
+						},
+						"description": "Получение информации об актёре по ID.\n\n**Примеры ID:**\n- 119448 - Киану Ривз\n- 66539 - Винс Гиллиган\n\nАлиас на /api/v1/persons/:id"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Examples",
+			"item": [
+				{
+					"name": "Search: Popular Films 2023",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/search?year_from=2023&year_to=2023&rating_min=7.0&order=RATING&sortType=DESC&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "search"],
+							"query": [
+								{
+									"key": "year_from",
+									"value": "2023",
+									"description": "Только 2023 год"
+								},
+								{
+									"key": "year_to",
+									"value": "2023"
+								},
+								{
+									"key": "rating_min",
+									"value": "7.0",
+									"description": "Рейтинг от 7.0"
+								},
+								{
+									"key": "order",
+									"value": "RATING",
+									"description": "Сортировка по рейтингу"
+								},
+								{
+									"key": "sortType",
+									"value": "DESC",
+									"description": "По убыванию"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Пример: поиск популярных фильмов 2023 года с рейтингом выше 7.0"
+					},
+					"response": []
+				},
+				{
+					"name": "Search: Comedy Films",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/search?genre=4&type=FILM&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "search"],
+							"query": [
+								{
+									"key": "genre",
+									"value": "4",
+									"description": "ID жанра 'комедия' (получить из /genres)"
+								},
+								{
+									"key": "type",
+									"value": "FILM",
+									"description": "Только фильмы (не сериалы)"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Пример: поиск комедий.\n\nID жанров можно получить через запрос `/api/v1/genres`."
+					},
+					"response": []
+				},
+				{
+					"name": "Search: Top Rated Sci-Fi",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/search?genre=6&rating_min=8.0&order=RATING&sortType=DESC",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "search"],
+							"query": [
+								{
+									"key": "genre",
+									"value": "6",
+									"description": "ID жанра 'фантастика'"
+								},
+								{
+									"key": "rating_min",
+									"value": "8.0",
+									"description": "Рейтинг от 8.0"
+								},
+								{
+									"key": "order",
+									"value": "RATING"
+								},
+								{
+									"key": "sortType",
+									"value": "DESC"
+								}
+							]
+						},
+						"description": "Пример: поиск лучшей фантастики с рейтингом от 8.0"
+					},
+					"response": []
+				},
+				{
+					"name": "Film Details: The Matrix",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/301",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "301"]
+						},
+						"description": "Пример: получение полной информации о фильме \"Матрица\" (ID: 301)"
+					},
+					"response": []
+				},
+				{
+					"name": "Cast: The Matrix",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/movies/301/staff",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "movies", "301", "staff"]
+						},
+						"description": "Пример: получение актёров и режиссёров фильма \"Матрица\""
+					},
+					"response": []
+				},
+				{
+					"name": "Person: Keanu Reeves",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/persons/119448",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "persons", "119448"]
+						},
+						"description": "Пример: получение информации о Киану Ривзе"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cache",
+			"item": [
+				{
+					"name": "Get Cache Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cache/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cache", "stats"]
+						},
+						"description": "Получение статистики кеша (для отладки).\n\n**Возвращает:**\n- status: ok\n- message: Cache is working\n\nВсе запросы к Kinopoisk API кешируются на 24 часа."
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Cache",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cache/clear",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cache", "clear"]
+						},
+						"description": "Очистка всего кеша (для тестирования).\n\n**Внимание:** После очистки следующие запросы к API будут тратить лимиты Kinopoisk!"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Root Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						},
+						"description": "Базовая информация о сервере.\n\n**Возвращает:**\n- name: Diplom Backend API\n- version: 1.0.0\n- description: Proxy server for Kinopoisk API with user authentication\n- endpoints: список доступных endpoints"
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Базовая проверка здоровья сервера.\n\n**Возвращает:**\n- status: ok"
+					},
+					"response": []
+				},
+				{
+					"name": "API Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "health"]
+						},
+						"description": "Расширенная проверка здоровья API.\n\n**Возвращает:**\n- status: ok\n- services:\n  - server: ok\n  - database: ok/not_configured/error\n  - kinopoisk: ok/not_configured"
+					},
+					"response": []
+				},
+				{
+					"name": "API Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1"]
+						},
+						"description": "Список всех доступных API endpoints.\n\n**Возвращает:**\n- version: 1.0.0\n- endpoints: объект со списком всех endpoints"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Collections",
+			"item": [
+				{
+					"name": "Create Collection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Любимые комедии 90-х\",\n  \"description\": \"Фильмы, которые заставляют смеяться\",\n  \"is_public\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections"]
+						},
+						"description": "Создание новой подборки фильмов.\n\n**Требует:** JWT токен (Authorization: Bearer ...)\n\n**Параметры:**\n- `title` - название подборки (1-255 символов, обязательно)\n- `description` - описание (до 1000 символов, опционально)\n- `is_public` - публичная ли подборка (по умолчанию true)\n\n**Возвращает:**\n- collection - созданная подборка"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Collection by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "1"]
+						},
+						"description": "Получение подборки по ID с полной информацией о фильмах.\n\n**Доступ:**\n- Публичные подборки - доступны всем\n- Приватные - только владельцу (требуется токен)\n\n**Возвращает:**\n- collection - подборка с массивом films"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Collections",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/my?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "my"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								},
+								{
+									"key": "page_size",
+									"value": "20",
+									"description": "Количество элементов на странице (макс. 50)"
+								}
+							]
+						},
+						"description": "Получение всех подборок текущего пользователя.\n\n**Требует:** JWT токен\n\n**Возвращает:**\n- total - общее количество\n- page - текущая страница\n- items - список подборок (краткая информация)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Collection",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Обновлённое название\",\n  \"description\": \"Новое описание\",\n  \"is_public\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "1"]
+						},
+						"description": "Обновление подборки.\n\n**Требует:** JWT токен + владелец подборки\n\n**Параметры (все опционально):**\n- `title` - новое название\n- `description` - новое описание\n- `is_public` - изменить видимость"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Collection",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "1"]
+						},
+						"description": "Удаление подборки.\n\n**Требует:** JWT токен + владелец подборки"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Film to Collection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"film_id\": 12345,\n  \"position\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/1/films",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "1", "films"]
+						},
+						"description": "Добавление фильма в подборку.\n\n**Требует:** JWT токен + владелец подборки\n\n**Параметры:**\n- `film_id` - kinopoiskId фильма (обязательно)\n- `position` - позиция в подборке (опционально, по умолчанию - в конец)"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Film from Collection",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/1/films/12345",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "1", "films", "12345"]
+						},
+						"description": "Удаление фильма из подборки.\n\n**Требует:** JWT токен + владелец подборки\n\n**Параметры:**\n- `1` - ID подборки\n- `12345` - kinopoiskId фильма"
+					},
+					"response": []
+				},
+				{
+					"name": "Reorder Films in Collection",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"film_positions\": {\n    \"12345\": 0,\n    \"67890\": 1,\n    \"11111\": 2\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections/1/films/reorder",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "collections", "1", "films", "reorder"]
+						},
+						"description": "Изменение порядка фильмов в подборке.\n\n**Требует:** JWT токен + владелец подборки\n\n**Параметры:**\n- `film_positions` - объект {film_id: position}\n\n**Пример:**\n```json\n{\n  \"film_positions\": {\n    \"12345\": 0,\n    \"67890\": 1\n  }\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User's Public Collections",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/1/collections?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "1", "collections"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								},
+								{
+									"key": "page_size",
+									"value": "20",
+									"description": "Количество элементов на странице"
+								}
+							]
+						},
+						"description": "Получение публичных подборок пользователя.\n\n**Доступ:** Публичный (не требует токена)\n\n**Параметры:**\n- `1` - ID пользователя\n- `page` - номер страницы\n- `page_size` - элементов на странице"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
