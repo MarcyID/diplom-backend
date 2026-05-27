@@ -25,12 +25,15 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Конфигурация
-DB_HOST="${DB_HOST:-127.0.0.1}"
+DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
 DB_USER="${DB_USER:-diplom}"
 DB_PASSWORD="${DB_PASSWORD:-diplom}"
 DB_NAME="${DB_NAME:-diplom_db}"
-SUPER_USER="${SUPER_USER:-vi.v.zhuravlev}"
+SUPER_USER="${SUPER_USER:-postgres}"
+
+# Экспортируем PGPASSWORD для аутентификации без ввода пароля
+export PGPASSWORD="$DB_PASSWORD"
 
 echo -e "${YELLOW}=== Инициализация БД для diplom-backend ===${NC}"
 echo "Host: $DB_HOST"
@@ -41,12 +44,12 @@ echo ""
 
 # Функция для выполнения SQL от имени суперпользователя
 run_as_super() {
-    PGPASSWORD="" psql -h "$DB_HOST" -U "$SUPER_USER" -d postgres -t -c "$1" 2>/dev/null
+    psql -h "$DB_HOST" -U "$SUPER_USER" -d postgres -t -c "$1" 2>/dev/null
 }
 
 # Функция для выполнения SQL от имени пользователя БД
 run_as_user() {
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -c "$1"
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -c "$1"
 }
 
 # Шаг 1: Проверка подключения
@@ -97,6 +100,7 @@ CREATE TABLE users (
     full_name VARCHAR(255),
     avatar_url VARCHAR(500),
     banner_url VARCHAR(500),
+    genre_preferences BIGINT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -148,10 +152,12 @@ CREATE TABLE favorites (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_refresh_token ON sessions(refresh_token_hash);
+CREATE INDEX IF NOT EXISTS idx_sessions_refresh_token_hash ON sessions(refresh_token_hash);
 CREATE INDEX IF NOT EXISTS idx_collections_user_id ON collections(user_id);
+CREATE INDEX IF NOT EXISTS idx_collections_created_at ON collections(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_collection_films_collection_id ON collection_films(collection_id);
 CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_user_type ON favorites(user_id, object_type);
 "
 
 echo -e "${GREEN}✓ Таблицы созданы${NC}"

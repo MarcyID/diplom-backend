@@ -4,12 +4,15 @@
 $ErrorActionPreference = "Stop"
 
 # Конфигурация
-$DB_HOST = $env:DB_HOST ?? "127.0.0.1"
+$DB_HOST = $env:DB_HOST ?? "localhost"
 $DB_PORT = $env:DB_PORT ?? "5432"
 $DB_USER = $env:DB_USER ?? "diplom"
 $DB_PASSWORD = $env:DB_PASSWORD ?? "diplom"
 $DB_NAME = $env:DB_NAME ?? "diplom_db"
-$SUPER_USER = $env:SUPER_USER ?? "vi.v.zhuravlev"
+$SUPER_USER = $env:SUPER_USER ?? "postgres"
+
+# Устанавливаем PGPASSWORD для аутентификации без ввода пароля
+$env:PGPASSWORD = $DB_PASSWORD
 
 Write-Host "`n=== Инициализация БД для diplom-backend ===" -ForegroundColor Yellow
 Write-Host "Host: $DB_HOST"
@@ -20,7 +23,6 @@ Write-Host "User: $DB_USER`n"
 # Функция для выполнения SQL
 function Invoke-SQL {
     param($User, $Database, $Query)
-    $env:PGPASSWORD = $DB_PASSWORD
     & psql -h $DB_HOST -U $User -d $Database -t -c $Query 2>&1
 }
 
@@ -62,6 +64,7 @@ CREATE TABLE users (
     full_name VARCHAR(255),
     avatar_url VARCHAR(500),
     banner_url VARCHAR(500),
+    genre_preferences BIGINT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -113,10 +116,12 @@ CREATE TABLE favorites (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX idx_sessions_refresh_token ON sessions(refresh_token_hash);
+CREATE INDEX idx_sessions_refresh_token_hash ON sessions(refresh_token_hash);
 CREATE INDEX idx_collections_user_id ON collections(user_id);
+CREATE INDEX idx_collections_created_at ON collections(created_at DESC);
 CREATE INDEX idx_collection_films_collection_id ON collection_films(collection_id);
 CREATE INDEX idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX idx_favorites_user_type ON favorites(user_id, object_type);
 "@
 
 Invoke-SQL -User $DB_USER -Database $DB_NAME -Query $SQL | Out-Null
