@@ -5,12 +5,12 @@ REM Использование: init_db.bat
 setlocal enabledelayedexpansion
 
 REM Конфигурация
-set DB_HOST=%DB_HOST:~%127.0.0.1%
-set DB_PORT=%DB_PORT:~%5432%
-set DB_USER=%DB_USER:~%diplom%
-set DB_PASSWORD=%DB_PASSWORD:~%diplom%
-set DB_NAME=%DB_NAME:~%diplom_db%
-set SUPER_USER=%SUPER_USER:~%vi.v.zhuravlev%
+if "%DB_HOST%"=="" set DB_HOST=localhost
+if "%DB_PORT%"=="" set DB_PORT=5432
+if "%DB_USER%"=="" set DB_USER=diplom
+if "%DB_PASSWORD%"=="" set DB_PASSWORD=diplom
+if "%DB_NAME%"=="" set DB_NAME=diplom_db
+if "%SUPER_USER%"=="" set SUPER_USER=postgres
 
 echo.
 echo === Инициализация БД для diplom-backend ===
