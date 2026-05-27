@@ -31,12 +31,25 @@ type KinopoiskClientConfig struct {
 	CacheTTL time.Duration
 }
 
+// createHTTPClient создает HTTP клиент с оптимизированным транспортом
+func createHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+			MaxConnsPerHost:     100,
+			IdleConnTimeout:     90 * time.Second,
+		},
+	}
+}
+
 // NewKinopoiskClient создает новый экземпляр клиента Kinopoisk API
 func NewKinopoiskClient(apiKey, baseURL string) *KinopoiskClient {
 	return &KinopoiskClient{
 		baseURL:  baseURL,
 		apiKey:   apiKey,
-		client:   &http.Client{Timeout: 30 * time.Second},
+		client:   createHTTPClient(),
 		cache:    nil,
 		cacheTTL: 24 * time.Hour,
 	}
@@ -47,7 +60,7 @@ func NewKinopoiskClientWithCache(config KinopoiskClientConfig) *KinopoiskClient 
 	client := &KinopoiskClient{
 		baseURL:  config.BaseURL,
 		apiKey:   config.APIKey,
-		client:   &http.Client{Timeout: 30 * time.Second},
+		client:   createHTTPClient(),
 		cache:    config.Cache,
 		cacheTTL: config.CacheTTL,
 	}

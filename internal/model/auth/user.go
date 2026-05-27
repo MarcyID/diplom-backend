@@ -4,15 +4,16 @@ import "time"
 
 // User представляет пользователя в системе
 type User struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email"`
-	Username  string    `json:"username"`
-	Password  string    `json:"-"` // Никогда не возвращать в JSON
-	FullName  *string   `json:"full_name,omitempty"`
-	AvatarURL *string   `json:"avatar_url,omitempty"`
-	BannerURL *string   `json:"banner_url,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID               int64     `json:"id"`
+	Email            string    `json:"email"`
+	Username         string    `json:"username"`
+	Password         string    `json:"-"` // Никогда не возвращать в JSON
+	FullName         *string   `json:"full_name,omitempty"`
+	AvatarURL        *string   `json:"avatar_url,omitempty"`
+	BannerURL        *string   `json:"banner_url,omitempty"`
+	GenrePreferences []int64   `json:"genre_preferences"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 // CreateUserRequest - запрос на регистрацию
@@ -38,24 +39,26 @@ type AuthResponse struct {
 
 // UserInfo - публичная информация о пользователе
 type UserInfo struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email"`
-	Username  string    `json:"username"`
-	FullName  *string   `json:"full_name,omitempty"`
-	AvatarURL *string   `json:"avatar_url,omitempty"`
-	BannerURL *string   `json:"banner_url,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	ID               int64     `json:"id"`
+	Email            string    `json:"email"`
+	Username         string    `json:"username"`
+	FullName         *string   `json:"full_name,omitempty"`
+	AvatarURL        *string   `json:"avatar_url,omitempty"`
+	BannerURL        *string   `json:"banner_url,omitempty"`
+	GenrePreferences []int64   `json:"genre_preferences"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 // ToUserInfo конвертирует User в UserInfo
 func (u *User) ToUserInfo() UserInfo {
 	return UserInfo{
-		ID:        u.ID,
-		Email:     u.Email,
-		Username:  u.Username,
-		FullName:  u.FullName,
-		AvatarURL: u.AvatarURL,
-		BannerURL: u.BannerURL,
-		CreatedAt: u.CreatedAt,
+		ID:               u.ID,
+		Email:            u.Email,
+		Username:         u.Username,
+		FullName:         u.FullName,
+		AvatarURL:        u.AvatarURL,
+		BannerURL:        u.BannerURL,
+		GenrePreferences: u.GenrePreferences,
+		CreatedAt:        u.CreatedAt,
 	}
 }

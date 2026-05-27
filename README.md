@@ -37,13 +37,37 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
 ### 3. Настройка базы данных (для аутентификации)
 
+**Вариант 1: Автоматически (скрипт)**
+
 ```bash
-# Создайте базу данных
+# macOS/Linux
+./scripts/init_db.sh
+
+# Windows (PowerShell)
+.\scripts\init_db.ps1
+```
+
+Скрипт создаст:
+- Базу данных `diplom_db`
+- Пользователя `diplom` с паролем `diplom`
+- Все таблицы (users, sessions, collections, collection_films, favorites)
+
+**Вариант 2: Вручную**
+
+```bash
+# Создать базу данных
 createdb diplom_db
 
-# Примените миграции
-psql -d diplom_db -f internal/database/migrations/001_init_auth.up.sql
+# Применить все миграции
+psql -d diplom_db -f internal/database/migrations/complete.sql
 ```
+
+**Структура БД:**
+- `users` — пользователи (email, username, password_hash, full_name, avatar_url, banner_url, genre_preferences[])
+- `sessions` — сессии (refresh_token_hash, user_agent, ip_address, expires_at)
+- `collections` — подборки (title, description, is_public)
+- `collection_films` — фильмы в подборках
+- `favorites` — избранное (фильмы и персоны)
 
 ### 4. Запуск сервера
 
@@ -513,34 +537,80 @@ Content-Type: application/json
 
 ## 📡 API Endpoints
 
-### Фильмы
+### 🔐 Аутентификация
 
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/v1/movies/search` | Поиск фильмов |
-| GET | `/api/v1/movies/:id` | Фильм по ID |
-| GET | `/api/v1/movies/random` | Случайный фильм |
-| GET | `/api/v1/movies/:id/similar` | Похожие фильмы по ID |
-| GET | `/api/v1/movies/similar/by-title` | Похожие по названию |
-| GET | `/api/v1/films/popular` | Популярные фильмы (топ) |
-| GET | `/api/v1/films/upcoming` | Предстоящие премьеры |
-| GET | `/api/v1/films/premieres` | Премьеры за текущий и следующий год |
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| POST | `/api/v1/auth/register` | Регистрация пользователя | ❌ |
+| POST | `/api/v1/auth/login` | Вход (получение токенов) | ❌ |
+| POST | `/api/v1/auth/refresh` | Обновление access токена | ❌ |
+| POST | `/api/v1/auth/logout` | Выход (удаление сессии) | ✅ |
+| GET | `/api/v1/auth/me` | Получить текущий профиль | ✅ |
 
-### Актёры и режиссёры
+### 👤 Профиль пользователя
 
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/v1/actors/search` | Поиск актёров по имени |
-| GET | `/api/v1/actors/:id` | Данные об актёре по ID |
-| GET | `/api/v1/actors/:id/filmography` | Фильмография актёра |
-| GET | `/api/v1/movies/:id/staff` | Актёры и режиссёры фильма |
-| GET | `/api/v1/persons/:id` | Данные о персоне (алиас) |
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| GET | `/api/v1/profile/me` | Получить профиль | ✅ |
+| PUT | `/api/v1/profile` | Обновить профиль (full_name, avatar_url, banner_url) | ✅ |
+| GET | `/api/v1/profile/genres` | Получить жанровые предпочтения | ✅ |
+| PUT | `/api/v1/profile/genres` | Обновить жанровые предпочтения | ✅ |
+| POST | `/api/v1/profile/avatar` | Загрузить аватар (multipart/form-data) | ✅ |
+| POST | `/api/v1/profile/banner` | Загрузить фон (multipart/form-data) | ✅ |
+| DELETE | `/api/v1/profile/avatar` | Удалить аватар | ✅ |
+| DELETE | `/api/v1/profile/banner` | Удалить фон | ✅ |
 
-### Справочная информация
+### 📚 Подборки (Collections)
 
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/v1/genres` | Жанры и страны для фильтров |
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| GET | `/api/v1/collections/my` | Мои подборки | ✅ |
+| POST | `/api/v1/collections/my` | Создать подборку | ✅ |
+| GET | `/api/v1/collections/:id` | Получить подборку по ID | ✅ |
+| PUT | `/api/v1/collections/:id` | Обновить подборку | ✅ |
+| DELETE | `/api/v1/collections/:id` | Удалить подборку | ✅ |
+| POST | `/api/v1/collections/:id/films/:filmId` | Добавить фильм | ✅ |
+| DELETE | `/api/v1/collections/:id/films/:filmId` | Удалить фильм | ✅ |
+| PUT | `/api/v1/collections/:id/films/reorder` | Изменить порядок фильмов | ✅ |
+| GET | `/api/v1/collections/user/:userId` | Публичные подборки пользователя | ❌ |
+
+### ⭐ Избранное (Favorites)
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| GET | `/api/v1/favorites` | Получить избранное (фильмы и персоны) | ✅ |
+| POST | `/api/v1/favorites/toggle/film/:filmId` | Добавить/удалить фильм | ✅ |
+| POST | `/api/v1/favorites/toggle/person/:personId` | Добавить/удалить персону | ✅ |
+
+### 🎬 Фильмы
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| GET | `/api/v1/movies/search` | Поиск фильмов | ❌ |
+| GET | `/api/v1/movies/:id` | Фильм по ID | ❌ |
+| GET | `/api/v1/movies/random` | Случайный фильм | ❌ |
+| GET | `/api/v1/movies/:id/similar` | Похожие фильмы по ID | ❌ |
+| GET | `/api/v1/movies/similar/by-title` | Похожие по названию | ❌ |
+| GET | `/api/v1/films/popular` | Популярные фильмы (топ) | ❌ |
+| GET | `/api/v1/films/upcoming` | Предстоящие премьеры | ❌ |
+| GET | `/api/v1/films/premieres` | Премьеры за текущий и следующий год | ❌ |
+
+### 🎭 Актёры и режиссёры
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| GET | `/api/v1/actors/search` | Поиск актёров по имени | ❌ |
+| GET | `/api/v1/actors/:id` | Данные об актёре по ID | ❌ |
+| GET | `/api/v1/actors/:id/filmography` | Фильмография актёра | ❌ |
+| GET | `/api/v1/movies/:id/staff` | Актёры и режиссёры фильма | ❌ |
+| GET | `/api/v1/persons/:id` | Данные о персоне (алиас) | ❌ |
+
+### 📋 Справочная информация
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|----------|------|
+| GET | `/api/v1/genres` | Жанры и страны для фильтров | ❌ |
+| GET | `/api/v1/health` | Проверка здоровья сервера | ❌ |
 
 ### Примеры запросов
 
@@ -642,9 +712,19 @@ GET /api/v1/films/premieres?year=2025&month=JANUARY
 
 Готовая коллекция запросов находится в [`/api/postman/`](./api/postman/).
 
+**Коллекция включает:**
+- 🔐 Аутентификация (register, login, logout, refresh)
+- 👤 Профиль (аватары, баннеры, жанровые предпочтения)
+- ⭐ Избранное (фильмы и персоны)
+- 📚 Подборки (CRUD, фильмы, порядок)
+- 🎬 Фильмы (поиск, детали, похожие, премьеры)
+- 🎭 Актёры и режиссёры
+
+**Использование:**
 1. Откройте Postman
-2. Импортируйте `Kinopoisk_API.postman_collection.json`
-3. Выполните любой запрос из коллекции
+2. Импортируйте `Kinopoisk_API.postman_collection.json` через **Import**
+3. Выполните `Login` для получения токенов
+4. Тестируйте endpoints
 
 📖 Подробнее в [`api/postman/README.md`](./api/postman/README.md).
 
@@ -662,34 +742,58 @@ GET /api/v1/films/premieres?year=2025&month=JANUARY
 │   │   │   └── auth.go          # JWT middleware
 │   │   └── handlers/
 │   │       ├── movie.go         # Обработчики фильмов
-│   │       └── auth.go          # Обработчики аутентификации
+│   │       ├── auth.go          # Обработчики аутентификации
+│   │       ├── profile.go       # Профиль (avatar, banner, genres)
+│   │       ├── collection.go    # Подборки
+│   │       └── favorite.go      # Избранное
 │   ├── database/
 │   │   ├── postgres.go          # Подключение к PostgreSQL
 │   │   └── migrations/
-│   │       └── 001_init_auth.up.sql
+│   │       ├── 001_init_auth.up.sql
+│   │       ├── 002_collections.up.sql
+│   │       ├── 003_favorites.up.sql
+│   │       ├── 004_user_profile.up.sql
+│   │       └── complete.sql     # Все миграции вместе
 │   ├── model/
 │   │   ├── kinopoisk/           # Модели данных Kinopoisk API
-│   │   │   ├── common.go        # Общие модели (жанры, страны, фильтры)
-│   │   │   ├── film.go          # Модели фильмов
-│   │   │   └── person.go        # Модели персон (актёры, режиссёры)
-│   │   └── auth/
-│   │       ├── user.go          # Модели пользователя
-│   │       └── session.go       # Модели сессии
+│   │   │   ├── common.go
+│   │   │   ├── film.go
+│   │   │   └── person.go
+│   │   ├── auth/
+│   │   │   ├── user.go          # User, UserInfo, JWTClaims
+│   │   │   └── session.go
+│   │   ├── collection/
+│   │   │   └── collection.go    # Collection, CollectionFilm
+│   │   └── favorite/
+│   │       └── favorite.go      # Favorite (film/person)
 │   ├── repository/
-│   │   ├── interfaces.go        # Интерфейсы репозиториев
-│   │   ├── user_repository.go   # Репозиторий пользователей
-│   │   └── session_repository.go # Репозиторий сессий
+│   │   ├── interfaces.go
+│   │   ├── user_repository.go
+│   │   ├── session_repository.go
+│   │   ├── collection_repository.go
+│   │   ├── collection_postgres_repository.go
+│   │   └── favorite_repository.go
 │   └── service/
 │       ├── kinopoisk_client.go  # Клиент Kinopoisk API
-│       └── auth_service.go      # Сервис аутентификации
+│       ├── auth_service.go      # Сервис аутентификации
+│       ├── user_service.go      # Профиль пользователя
+│       ├── file_upload_service.go # Загрузка файлов
+│       ├── collection_service.go
+│       └── favorite_service.go
+├── scripts/
+│   ├── init_db.sh               # Скрипт инициализации БД (macOS/Linux)
+│   └── init_db.ps1              # Скрипт инициализации БД (Windows)
+├── uploads/
+│   ├── avatars/                 # Аватары пользователей
+│   └── banners/                 # Фоны профилей
 ├── api/
 │   ├── openapi/kinopoisk/
-│   │   └── openapi.json         # Спецификация API
+│   │   └── openapi.json
 │   └── postman/
 │       ├── Kinopoisk_API.postman_collection.json
 │       └── README.md
-├── .env                         # Переменные окружения
-├── .env.example                 # Пример переменных окружения
+├── .env
+├── .env.example
 ├── go.mod
 └── README.md
 ```

@@ -57,12 +57,17 @@ func SetupRouter(kinopoisk *service.KinopoiskClient, authService *service.AuthSe
 	// CORS для фронтенда
 	r.Use(allowedOrigins())
 
+	// Статический хендлер для загруженных файлов
+	r.Static("/uploads", "./uploads")
+
 	// Recovery middleware для обработки паник
 	r.Use(gin.Recovery())
 
 	movieHandler := handlers.NewMovieHandler(kinopoisk)
 	authHandler := handlers.NewAuthHandler(authService)
-	profileHandler := handlers.NewProfileHandler(authService)
+	userService := service.NewUserService(repository.NewUserRepository(db))
+	fileUploadService := service.NewFileUploadService("uploads", "http://localhost:5454")
+	profileHandler := handlers.NewProfileHandler(authService, userService, fileUploadService)
 	systemHandler := handlers.NewSystemHandler(db, kinopoisk)
 	cacheHandler := handlers.NewCacheHandler(kinopoiskCache)
 	collectionHandler := handlers.NewCollectionHandler(service.NewCollectionService(
@@ -204,22 +209,22 @@ func SetupRouter(kinopoisk *service.KinopoiskClient, authService *service.AuthSe
 		// Премьеры за текущий и следующий год
 		api.GET("/films/premieres", movieHandler.GetPremieres)
 
-		// 🎬 Подборки фильмов
-		api.GET("/collections/:id", collectionHandler.GetCollection)                  // публичный доступ или владелец
-		api.GET("/users/:id/collections", collectionHandler.GetPublicUserCollections) // публичные подборки пользователя
-
-		// Подборки (требуют токен)
+		// 🎬 Подборки фильмов (требуют токен)
 		collections := api.Group("/collections")
 		collections.Use(middleware.JWTAuth(authService))
 		{
-			collections.POST("", collectionHandler.CreateCollection)                             // создать подборку
 			collections.GET("/my", collectionHandler.GetUserCollections)                         // мои подборки
+			collections.POST("", collectionHandler.CreateCollection)                             // создать подборку
 			collections.PUT("/:id", collectionHandler.UpdateCollection)                          // обновить подборку
 			collections.DELETE("/:id", collectionHandler.DeleteCollection)                       // удалить подборку
 			collections.POST("/:id/films", collectionHandler.AddFilmToCollection)                // добавить фильм
 			collections.DELETE("/:id/films/:filmId", collectionHandler.RemoveFilmFromCollection) // удалить фильм
 			collections.PUT("/:id/films/reorder", collectionHandler.ReorderCollectionFilms)      // изменить порядок
 		}
+
+		// Публичные роуты подборок (без токена)
+		api.GET("/collections/:id", collectionHandler.GetCollection)                  // публичный доступ или владелец
+		api.GET("/users/:id/collections", collectionHandler.GetPublicUserCollections) // публичные подборки пользователя
 
 		// Избранное (требуют токен)
 		favorites := api.Group("/favorites")
@@ -238,8 +243,14 @@ func SetupRouter(kinopoisk *service.KinopoiskClient, authService *service.AuthSe
 		profile := api.Group("/profile")
 		profile.Use(middleware.JWTAuth(authService))
 		{
-			profile.GET("/me", profileHandler.GetProfile) // получить мой профиль
-			profile.PUT("", profileHandler.UpdateProfile) // обновить профиль
+			profile.GET("/me", profileHandler.GetProfile)                 // получить мой профиль
+			profile.PUT("", profileHandler.UpdateProfile)                 // обновить профиль
+			profile.GET("/genres", profileHandler.GetGenrePreferences)    // получить жанровые предпочтения
+			profile.PUT("/genres", profileHandler.UpdateGenrePreferences) // обновить жанровые предпочтения
+			profile.POST("/avatar", profileHandler.UploadAvatar)          // загрузить аватар
+			profile.POST("/banner", profileHandler.UploadBanner)          // загрузить фон
+			profile.DELETE("/avatar", profileHandler.DeleteAvatar)        // удалить аватар
+			profile.DELETE("/banner", profileHandler.DeleteBanner)        // удалить фон
 		}
 	}
 	return r

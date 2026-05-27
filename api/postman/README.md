@@ -29,6 +29,38 @@
 | Logout | POST | Выход из системы (требует токен) |
 | Refresh Token | POST | Обновление пары токенов |
 
+### 👤 Profile
+| Запрос | Метод | Описание |
+|--------|-------|----------|
+| Get My Profile | GET | Получить профиль текущего пользователя |
+| Update Profile | PUT | Обновить full_name, avatar_url, banner_url |
+| Get Genre Preferences | GET | Получить жанровые предпочтения (ID жанров) |
+| Update Genre Preferences | PUT | Обновить жанровые предпочтения |
+| Upload Avatar | POST | Загрузить аватар (multipart/form-data) |
+| Upload Banner | POST | Загрузить фон (multipart/form-data) |
+| Delete Avatar | DELETE | Удалить аватар |
+| Delete Banner | DELETE | Удалить фон |
+
+### ⭐ Favorites
+| Запрос | Метод | Описание |
+|--------|-------|----------|
+| Get Favorites | GET | Получить избранное (фильмы и персоны) |
+| Toggle Film Favorite | POST | Добавить/удалить фильм из избранного |
+| Toggle Person Favorite | POST | Добавить/удалить персону из избранного |
+
+### 📚 Collections
+| Запрос | Метод | Описание |
+|--------|-------|----------|
+| Get My Collections | GET | Получить все подборки текущего пользователя |
+| Create Collection | POST | Создать новую подборку |
+| Get Collection by ID | GET | Получить подборку по ID с фильмами |
+| Update Collection | PUT | Обновить подборку |
+| Delete Collection | DELETE | Удалить подборку |
+| Add Film to Collection | POST | Добавить фильм в подборку (`/collections/:id/films`) |
+| Remove Film from Collection | DELETE | Удалить фильм из подборки (`/collections/:id/films/:filmId`) |
+| Reorder Films | PUT | Изменить порядок фильмов в подборке (`/collections/:id/films/reorder`) |
+| Get User's Public Collections | GET | Публичные подборки пользователя (без авторизации) |
+
 ### 🎬 Films
 | Запрос | Метод | Описание |
 |--------|-------|----------|
@@ -39,6 +71,7 @@
 | Find Similar by Title | GET | Похожие фильмы по названию |
 | Get Popular Films | GET | Популярные фильмы (топ) |
 | Get Upcoming Films | GET | Предстоящие премьеры |
+| Get Premieres | GET | Премьеры за указанный год и месяц |
 | Get Genres and Countries | GET | Список жанров и стран для фильтров |
 
 ### 🎭 Cast & Crew

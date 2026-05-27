@@ -39,16 +39,16 @@ type CollectionWithFilms struct {
 
 // CreateCollectionRequest запрос на создание подборки
 type CreateCollectionRequest struct {
-	Title       string  `json:"title" binding:"required,min=1,max=255"`
-	Description *string `json:"description,omitempty" binding:"max=1000"`
-	IsPublic    bool    `json:"is_public"`
+	Title       string `json:"title" binding:"required,min=1,max=255"`
+	Description string `json:"description,omitempty" binding:"max=1000"`
+	IsPublic    bool   `json:"is_public"`
 }
 
 // UpdateCollectionRequest запрос на обновление подборки
 type UpdateCollectionRequest struct {
-	Title       string  `json:"title" binding:"omitempty,min=1,max=255"`
-	Description *string `json:"description,omitempty" binding:"max=1000"`
-	IsPublic    *bool   `json:"is_public,omitempty"`
+	Title       string `json:"title,omitempty" binding:"omitempty,min=1,max=255"`
+	Description string `json:"description,omitempty" binding:"max=1000"`
+	IsPublic    *bool  `json:"is_public,omitempty"`
 }
 
 // AddFilmToCollectionRequest запрос на добавление фильма в подборку

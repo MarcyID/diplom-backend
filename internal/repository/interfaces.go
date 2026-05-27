@@ -13,6 +13,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*auth.User, error)
 	GetByUsername(ctx context.Context, username string) (*auth.User, error)
 	Update(ctx context.Context, user *auth.User) error
+	UpdateGenrePreferences(ctx context.Context, userID int64, genreIDs []int64) error
 }
 
 // SessionRepository определяет интерфейс для работы с сессиями

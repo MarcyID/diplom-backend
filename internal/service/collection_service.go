@@ -6,6 +6,7 @@ import (
 	"diplomM/internal/model/kinopoisk"
 	"diplomM/internal/repository"
 	"errors"
+	"sync"
 )
 
 // CollectionService сервис для работы с подборками
@@ -28,10 +29,14 @@ func NewCollectionService(
 // CreateCollection создает новую подборку
 func (s *CollectionService) CreateCollection(ctx context.Context, userID int64, req collection.CreateCollectionRequest) (*collection.Collection, error) {
 	coll := &collection.Collection{
-		UserID:      userID,
-		Title:       req.Title,
-		Description: req.Description,
-		IsPublic:    req.IsPublic,
+		UserID:   userID,
+		Title:    req.Title,
+		IsPublic: req.IsPublic,
+	}
+
+	// Устанавливаем description только если он не пустой
+	if req.Description != "" {
+		coll.Description = &req.Description
 	}
 
 	return s.collectionRepo.Create(ctx, coll)
@@ -58,29 +63,22 @@ func (s *CollectionService) GetCollection(ctx context.Context, id int64, request
 		return nil, err
 	}
 
-	// Получаем информацию о фильмах из Kinopoisk API
+	// Получаем информацию о фильмах из Kinopoisk API параллельно (батчами по 10)
 	films := make([]kinopoisk.FilmBasic, 0, len(filmRecords))
-	for _, filmRecord := range filmRecords {
-		filmInfo, err := s.kinopoisk.GetFilmByID(filmRecord.FilmID)
-		if err != nil {
-			// Если фильм не найден, пропускаем его
-			continue
-		}
+	const batchSize = 10
 
-		films = append(films, kinopoisk.FilmBasic{
-			KinopoiskID:      filmInfo.KinopoiskID,
-			NameRU:           filmInfo.NameRU,
-			NameEN:           filmInfo.NameEN,
-			NameOriginal:     filmInfo.NameOriginal,
-			PosterURL:        filmInfo.PosterURL,
-			PosterURLPreview: filmInfo.PosterURLPreview,
-			Year:             filmInfo.Year,
-			RatingKinopoisk:  filmInfo.RatingKinopoisk,
-			RatingIMDB:       filmInfo.RatingIMDB,
-			Type:             filmInfo.Type,
-			Countries:        filmInfo.Countries,
-			Genres:           filmInfo.Genres,
-		})
+	for i := 0; i < len(filmRecords); i += batchSize {
+		end := i + batchSize
+		if end > len(filmRecords) {
+			end = len(filmRecords)
+		}
+		batch := filmRecords[i:end]
+
+		batchFilms, err := s.loadFilmsBatch(ctx, batch)
+		if err != nil {
+			return nil, err
+		}
+		films = append(films, batchFilms...)
 	}
 
 	return &collection.CollectionWithFilms{
@@ -93,6 +91,53 @@ func (s *CollectionService) GetCollection(ctx context.Context, id int64, request
 		UpdatedAt:   coll.UpdatedAt,
 		Films:       films,
 	}, nil
+}
+
+// loadFilmsBatch загружает данные для батча фильмов параллельно
+func (s *CollectionService) loadFilmsBatch(ctx context.Context, filmRecords []*collection.CollectionFilm) ([]kinopoisk.FilmBasic, error) {
+	films := make([]kinopoisk.FilmBasic, len(filmRecords))
+	var wg sync.WaitGroup
+
+	for i, filmRecord := range filmRecords {
+		wg.Add(1)
+		go func(idx int, fr *collection.CollectionFilm) {
+			defer wg.Done()
+
+			filmInfo, err := s.kinopoisk.GetFilmByID(fr.FilmID)
+			if err != nil {
+				// Если фильм не найден, пропускаем
+				return
+			}
+
+			films[idx] = kinopoisk.FilmBasic{
+				KinopoiskID:      filmInfo.KinopoiskID,
+				NameRU:           filmInfo.NameRU,
+				NameEN:           filmInfo.NameEN,
+				NameOriginal:     filmInfo.NameOriginal,
+				PosterURL:        filmInfo.PosterURL,
+				PosterURLPreview: filmInfo.PosterURLPreview,
+				Year:             filmInfo.Year,
+				RatingKinopoisk:  filmInfo.RatingKinopoisk,
+				RatingIMDB:       filmInfo.RatingIMDB,
+				Type:             filmInfo.Type,
+				Countries:        filmInfo.Countries,
+				Genres:           filmInfo.Genres,
+			}
+		}(i, filmRecord)
+	}
+
+	// Ждем завершения всех горутин
+	wg.Wait()
+
+	// Фильтруем пустые элементы (где данные не загрузились)
+	filteredFilms := make([]kinopoisk.FilmBasic, 0, len(films))
+	for _, film := range films {
+		if film.KinopoiskID != 0 {
+			filteredFilms = append(filteredFilms, film)
+		}
+	}
+
+	return filteredFilms, nil
 }
 
 // GetUserCollections получает все подборки пользователя
@@ -138,8 +183,11 @@ func (s *CollectionService) UpdateCollection(ctx context.Context, id int64, user
 	if req.Title != "" {
 		coll.Title = req.Title
 	}
-	if req.Description != nil {
-		coll.Description = req.Description
+	// Обновляем description: если пустой - устанавливаем nil, иначе - указатель на значение
+	if req.Description != "" {
+		coll.Description = &req.Description
+	} else {
+		coll.Description = nil
 	}
 	if req.IsPublic != nil {
 		coll.IsPublic = *req.IsPublic

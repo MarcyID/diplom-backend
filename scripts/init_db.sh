@@ -2,6 +2,19 @@
 
 # Скрипт создания и настройки БД для diplom-backend
 # Использование: ./scripts/init_db.sh
+# 
+# Скрипт создаёт:
+# - Базу данных diplom_db
+# - Пользователя diplom с паролем diplom
+# - Все таблицы (users, sessions, collections, collection_films, favorites)
+#
+# Переменные окружения (опционально):
+# - DB_HOST (по умолчанию: 127.0.0.1)
+# - DB_PORT (по умолчанию: 5432)
+# - DB_USER (по умолчанию: diplom)
+# - DB_PASSWORD (по умолчанию: diplom)
+# - DB_NAME (по умолчанию: diplom_db)
+# - SUPER_USER (по умолчанию: vi.v.zhuravlev)
 
 set -e
 

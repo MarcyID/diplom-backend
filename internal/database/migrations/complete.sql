@@ -18,6 +18,7 @@ CREATE TABLE users (
     full_name VARCHAR(255),
     avatar_url VARCHAR(500),
     banner_url VARCHAR(500),
+    genre_preferences BIGINT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

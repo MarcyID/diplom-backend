@@ -1,0 +1,7 @@
+# Ignore all uploaded files
+uploads/**/*
+
+# But keep the directory structure
+!uploads/.gitkeep
+!uploads/avatars/.gitkeep
+!uploads/banners/.gitkeep

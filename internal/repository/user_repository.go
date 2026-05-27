@@ -23,12 +23,16 @@ func NewUserRepository(db *database.PostgreSQL) UserRepository {
 // Create создает нового пользователя
 func (r *userRepository) Create(ctx context.Context, user *auth.User) (*auth.User, error) {
 	query := `
-		INSERT INTO users (email, username, password_hash, full_name, avatar_url, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO users (email, username, password_hash, full_name, avatar_url, genre_preferences, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at, updated_at
 	`
 
 	now := time.Now()
+	genrePrefs := []int64{}
+	if user.GenrePreferences != nil {
+		genrePrefs = user.GenrePreferences
+	}
 	err := r.db.Pool.QueryRow(
 		ctx, query,
 		user.Email,
@@ -36,6 +40,7 @@ func (r *userRepository) Create(ctx context.Context, user *auth.User) (*auth.Use
 		user.Password,
 		user.FullName,
 		user.AvatarURL,
+		genrePrefs,
 		now,
 		now,
 	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
@@ -50,7 +55,7 @@ func (r *userRepository) Create(ctx context.Context, user *auth.User) (*auth.Use
 // GetByID получает пользователя по ID
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*auth.User, error) {
 	query := `
-		SELECT id, email, username, password_hash, full_name, avatar_url, created_at, updated_at
+		SELECT id, email, username, password_hash, full_name, avatar_url, banner_url, genre_preferences, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -63,6 +68,8 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*auth.User, err
 		&user.Password,
 		&user.FullName,
 		&user.AvatarURL,
+		&user.BannerURL,
+		&user.GenrePreferences,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -80,7 +87,7 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*auth.User, err
 // GetByEmail получает пользователя по email
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*auth.User, error) {
 	query := `
-		SELECT id, email, username, password_hash, full_name, avatar_url, created_at, updated_at
+		SELECT id, email, username, password_hash, full_name, avatar_url, banner_url, genre_preferences, created_at, updated_at
 		FROM users
 		WHERE email = $1
 	`
@@ -93,6 +100,8 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*auth.Us
 		&user.Password,
 		&user.FullName,
 		&user.AvatarURL,
+		&user.BannerURL,
+		&user.GenrePreferences,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -141,9 +150,14 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*a
 func (r *userRepository) Update(ctx context.Context, user *auth.User) error {
 	query := `
 		UPDATE users
-		SET email = $1, username = $2, password_hash = $3, full_name = $4, avatar_url = $5, updated_at = $6
-		WHERE id = $7
+		SET email = $1, username = $2, password_hash = $3, full_name = $4, avatar_url = $5, banner_url = $6, genre_preferences = $7, updated_at = $8
+		WHERE id = $9
 	`
+
+	genrePrefs := []int64{}
+	if user.GenrePreferences != nil {
+		genrePrefs = user.GenrePreferences
+	}
 
 	_, err := r.db.Pool.Exec(ctx, query,
 		user.Email,
@@ -151,9 +165,23 @@ func (r *userRepository) Update(ctx context.Context, user *auth.User) error {
 		user.Password,
 		user.FullName,
 		user.AvatarURL,
+		user.BannerURL,
+		genrePrefs,
 		time.Now(),
 		user.ID,
 	)
 
+	return err
+}
+
+// UpdateGenrePreferences обновляет жанровые предпочтения пользователя
+func (r *userRepository) UpdateGenrePreferences(ctx context.Context, userID int64, genreIDs []int64) error {
+	query := `
+		UPDATE users
+		SET genre_preferences = $1, updated_at = $2
+		WHERE id = $3
+	`
+
+	_, err := r.db.Pool.Exec(ctx, query, genreIDs, time.Now(), userID)
 	return err
 }
