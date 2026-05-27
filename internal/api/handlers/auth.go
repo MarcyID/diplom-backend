@@ -62,7 +62,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, authResponse)
+	// Возвращаем токены напрямую (без обёртки response.Success)
+	c.JSON(http.StatusOK, authResponse)
 }
 
 // Logout выполняет выход пользователя

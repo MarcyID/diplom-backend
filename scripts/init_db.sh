@@ -68,8 +68,15 @@ echo -e "${GREEN}✓ Права предоставлены${NC}"
 echo -e "${YELLOW}[5/5] Создание таблиц...${NC}"
 
 run_as_user "
+-- Удаляем старые таблицы (если есть)
+DROP TABLE IF EXISTS favorites CASCADE;
+DROP TABLE IF EXISTS collection_films CASCADE;
+DROP TABLE IF EXISTS collections CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- Таблица пользователей
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(100) NOT NULL UNIQUE,
@@ -82,7 +89,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Таблица сессий
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     refresh_token_hash VARCHAR(500) NOT NULL UNIQUE,
@@ -94,7 +101,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 -- Таблица подборок
-CREATE TABLE IF NOT EXISTS collections (
+CREATE TABLE collections (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -105,7 +112,7 @@ CREATE TABLE IF NOT EXISTS collections (
 );
 
 -- Таблица фильмов в подборках
-CREATE TABLE IF NOT EXISTS collection_films (
+CREATE TABLE collection_films (
     id BIGSERIAL PRIMARY KEY,
     collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
     film_id BIGINT NOT NULL,
@@ -115,7 +122,7 @@ CREATE TABLE IF NOT EXISTS collection_films (
 );
 
 -- Таблица избранного
-CREATE TABLE IF NOT EXISTS favorites (
+CREATE TABLE favorites (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     object_type VARCHAR(10) NOT NULL CHECK (object_type IN ('film', 'person')),

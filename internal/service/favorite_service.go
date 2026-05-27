@@ -106,10 +106,10 @@ func (s *FavoriteService) GetFavorites(ctx context.Context, userID int64, page, 
 				continue
 			}
 
-			// Получаем профессию из первого фильма
+			// Получаем профессию из основного поля profession
 			profession := ""
-			if len(personInfo.Films) > 0 && personInfo.Films[0].ProfessionText != nil {
-				profession = *personInfo.Films[0].ProfessionText
+			if personInfo.Profession != nil {
+				profession = *personInfo.Profession
 			}
 
 			item.PersonData = &favorite.PersonFavoriteData{

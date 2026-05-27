@@ -166,8 +166,8 @@ func SetupRouter(kinopoisk *service.KinopoiskClient, authService *service.AuthSe
 		auth := api.Group("")
 		auth.Use(middleware.JWTAuth(authService))
 		{
-			api.GET("/auth/me", authHandler.Me)
-			api.POST("/auth/logout", authHandler.Logout)
+			auth.GET("/auth/me", authHandler.Me)
+			auth.POST("/auth/logout", authHandler.Logout)
 		}
 
 		// Фильмы

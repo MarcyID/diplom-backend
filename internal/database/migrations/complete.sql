@@ -1,8 +1,16 @@
 -- Полная схема БД для diplom_db
 -- Выполнять от имени пользователя diplom
+-- Скрипт удаляет старые таблицы перед созданием новых
+
+-- Удаляем старые таблицы (если есть)
+DROP TABLE IF EXISTS favorites CASCADE;
+DROP TABLE IF EXISTS collection_films CASCADE;
+DROP TABLE IF EXISTS collections CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- Таблица пользователей
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(100) NOT NULL UNIQUE,

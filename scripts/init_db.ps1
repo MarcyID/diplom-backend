@@ -53,6 +53,7 @@ Invoke-SQL -User $DB_USER -Database $DB_NAME -Query "DROP TABLE IF EXISTS users 
 
 # Создаём новые
 $SQL = @"
+-- Таблица пользователей
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -65,6 +66,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Таблица сессий
 CREATE TABLE sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -76,6 +78,7 @@ CREATE TABLE sessions (
     is_revoked BOOLEAN DEFAULT FALSE
 );
 
+-- Таблица подборок
 CREATE TABLE collections (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -86,6 +89,7 @@ CREATE TABLE collections (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Таблица фильмов в подборках
 CREATE TABLE collection_films (
     id BIGSERIAL PRIMARY KEY,
     collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
@@ -95,6 +99,7 @@ CREATE TABLE collection_films (
     UNIQUE(collection_id, film_id)
 );
 
+-- Таблица избранного
 CREATE TABLE favorites (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -104,6 +109,7 @@ CREATE TABLE favorites (
     UNIQUE(user_id, object_type, object_id)
 );
 
+-- Индексы
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
